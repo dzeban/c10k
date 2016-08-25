@@ -3,9 +3,7 @@
 
 #define BUFSIZE 4096
 #define GET "GET"
-#define RESPONSE_BODY "<html><body><h1>It works!</h1></body></html>"
-//#define RESPONSE_BODY "HTTP/1.1 200 OK\r\n<html><body><h1>It works!</h1></body></html>"
-//#define RESPONSE_BODY "HTTP/1.1 200 OK\r\nCache: no-cache\r\nContent-Type: text/html\r\nContent-Length: 44\r\n<html><body><h1>It works!</h1></body></html>"
+#define RESPONSE_BODY "HTTP/1.1 200 OK\r\nCache: no-cache\r\nContent-Type: text/html\r\nContent-Length: 44\r\n\r\n<html><body><h1>It works!</h1></body></html>"
 
 struct handler_ctx {
     char *buf;

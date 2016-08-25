@@ -95,7 +95,13 @@ int http_handler(int sock_client, struct handler_ctx *ctx)
     }
     fprintf(stderr, "Successfully parsed request\n");
 
-    // We response for any "GET" request
-    return write_response(sock_client, RESPONSE_BODY, strlen(RESPONSE_BODY));
+
+	if (strncmp(request.method.p, GET, request.method.len) == 0) {
+		// Pretend to do some work for 100ms
+		usleep(100000);
+		return write_response(sock_client, RESPONSE_BODY, strlen(RESPONSE_BODY));
+	} else {
+		return -2;
+	}
 }
 
