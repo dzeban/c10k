@@ -3,6 +3,7 @@
 
 #include "mongoose/mongoose.h"
 #include "http_handler.h"
+#include "logging.h"
 
 int read_request(int sock_client, struct handler_ctx *ctx)
 {
@@ -13,7 +14,7 @@ int read_request(int sock_client, struct handler_ctx *ctx)
     nleft = ctx->bufsize;
     while (nleft > 0) {
         nread = read(sock_client, buf, nleft);
-        fprintf(stderr, "nread %d\n", nread);
+        debug("nread %d\n", nread);
         if (nread < 0) {
             if (errno == EINTR) {
                 nread = 0; // call read again
@@ -49,7 +50,7 @@ int write_response(int sock_client, const char *response, size_t n)
         ptr += nwritten;
     }
 
-    fprintf(stderr, "Successfully written %d\n", nwritten);
+    debug("Successfully written %d\n", nwritten);
     return 0;
 }
 
@@ -87,13 +88,13 @@ int http_handler(int sock_client, struct handler_ctx *ctx)
     if (nread < 0) {
         return -1;
     }
-    fprintf(stderr, "Read %d\n", nread);
+    debug("Read %d\n", nread);
 
     nread = mg_parse_http(ctx->buf, nread, &request, 1);
     if (nread <= 0) {
         return -1;
     }
-    fprintf(stderr, "Successfully parsed request\n");
+    debug("Successfully parsed request\n");
 
 
 	if (strncmp(request.method.p, GET, request.method.len) == 0) {

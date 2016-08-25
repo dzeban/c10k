@@ -10,6 +10,7 @@
 
 #include "config.h"
 #include "http_handler.h"
+#include "logging.h"
 
 int main(int argc, const char *argv[])
 {
@@ -59,7 +60,7 @@ int main(int argc, const char *argv[])
         struct handler_ctx *ctx;
         sock_client = accept(sock_listen, (struct sockaddr *)&peer_address, &peer_address_len);
 
-        fprintf(stderr, "Client accept\n");
+        debug("Client accept\n");
 
         ctx = handler_init();
         http_handler(sock_client, ctx);
