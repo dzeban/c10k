@@ -9,3 +9,7 @@ blocking_single: blocking_single.o
 
 clean:
 	rm -f *.o blocking_single
+
+# Simple test load - 100 concurent clients for 1000 requests
+test:
+	ab -n1000 -c 100 http://0.0.0.0:8282/
