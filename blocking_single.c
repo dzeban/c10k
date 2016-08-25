@@ -22,11 +22,7 @@ int main(int argc, const char *argv[])
     memset(&address, 0, sizeof(address));
     address.sin_family = AF_INET;
     address.sin_port = htons(8282);
-    if (!inet_aton("0.0.0.0", &address.sin_addr)) {
-        perror("inet_aton");
-        rc = EXIT_FAILURE;
-        goto exit_rc;
-    }
+	address.sin_addr.s_addr = htonl(INADDR_ANY);
 
     sock_listen = socket(AF_INET, SOCK_STREAM, 0);
     if (sock_listen < 0) {
