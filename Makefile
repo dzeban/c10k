@@ -17,7 +17,7 @@ client: client.c $(COMMON_CODE)
 	$(CC) $(CFLAGS) $(EXTRA_CFLAGS) $^ -o $@
 
 clean:
-	rm -f *.o blocking_single blocking_forking
+	rm -f *.o blocking_single blocking_forking client
 
 # Simple test load - 100 concurent clients for 1000 requests
 .PHONY: test
