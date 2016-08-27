@@ -49,12 +49,12 @@ int http_handler(int sock_client, struct handler_ctx *ctx)
     debug("Successfully parsed request\n");
 
 
-	if (strncmp(request.method.p, GET, request.method.len) == 0) {
-		// Pretend to do some work for 100ms
-		usleep(100000);
-		return socket_write(sock_client, RESPONSE_BODY, strlen(RESPONSE_BODY));
-	} else {
-		return -2;
-	}
+    if (strncmp(request.method.p, GET, request.method.len) == 0) {
+        // Pretend to do some work for 100ms
+        usleep(100000);
+        return socket_write(sock_client, RESPONSE_BODY, strlen(RESPONSE_BODY));
+    } else {
+        return -2;
+    }
 }
 
