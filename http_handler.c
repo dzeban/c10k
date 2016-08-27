@@ -3,56 +3,8 @@
 
 #include "mongoose/mongoose.h"
 #include "http_handler.h"
+#include "socket_io.h"
 #include "logging.h"
-
-int read_request(int sock_client, struct handler_ctx *ctx)
-{
-    int nleft, nread;
-    char *buf;
-
-    buf = ctx->buf;
-    nleft = ctx->bufsize;
-    while (nleft > 0) {
-        nread = read(sock_client, buf, nleft);
-        debug("nread %d\n", nread);
-        if (nread < 0) {
-            if (errno == EINTR) {
-                nread = 0; // call read again
-            } else {
-                return -1;
-            }
-        } else {
-            // Detect end of request
-            if (strstr(buf, "\r\n\r\n") != NULL)
-                break;
-        }
-
-        nleft -= nread;
-        buf += nread;
-    }
-    return nread;
-}
-
-int write_response(int sock_client, const char *response, size_t n)
-{
-    int nleft, nwritten;
-    const char *ptr;
-
-    ptr = response;
-    nleft = n;
-    while (nleft > 0) {
-        nwritten = write(sock_client, ptr, nleft);
-        if (nwritten < 0 && errno == EINTR) {
-            nwritten = 0; // call write again
-        }
-
-        nleft -= nwritten;
-        ptr += nwritten;
-    }
-
-    debug("Successfully written %d\n", nwritten);
-    return 0;
-}
 
 struct handler_ctx *handler_init()
 {
@@ -81,10 +33,10 @@ void handler_destroy(struct handler_ctx *ctx)
 
 int http_handler(int sock_client, struct handler_ctx *ctx)
 {
-    struct http_message request, response;
+    struct http_message request;
 
     int nread;
-    nread = read_request(sock_client, ctx);
+    nread = socket_read(sock_client, ctx->buf, ctx->bufsize);
     if (nread < 0) {
         return -1;
     }
@@ -100,7 +52,7 @@ int http_handler(int sock_client, struct handler_ctx *ctx)
 	if (strncmp(request.method.p, GET, request.method.len) == 0) {
 		// Pretend to do some work for 100ms
 		usleep(100000);
-		return write_response(sock_client, RESPONSE_BODY, strlen(RESPONSE_BODY));
+		return socket_write(sock_client, RESPONSE_BODY, strlen(RESPONSE_BODY));
 	} else {
 		return -2;
 	}
