@@ -79,6 +79,18 @@ int main(int argc, const char *argv[])
 		pid_t child;
 
         sock_client = accept(sock_listen, (struct sockaddr *)&peer_address, &peer_address_len);
+		if (sock_client < 0) {
+			// "accept" is a "slow" system call, if signal handling happened
+			// while accept was working we'll receive EINTR. And it's ok.
+			// On Linux it can be automatically restarted by providing
+			// SA_RESTART to signal handler and NOT specifying SO_RCVTIMEO.
+			// But we opt to make more portable and restart it by hand.
+			if (errno != EINTR) {
+				perror("accept");
+			}
+			continue;
+		}
+		debug("Accept from %s, sock %d\n", inet_ntoa(peer_address.sin_addr), sock_client);
 
 		child = fork();
 		if (child == 0) {
