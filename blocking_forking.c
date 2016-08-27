@@ -16,7 +16,10 @@
 
 static void sigchld_handler(int sig, siginfo_t *si, void *unused)
 {
-	waitpid(si->si_pid, NULL, WNOHANG);
+	// Signals are not queued, meaning that SIGCHLD from multiple child
+	// processes will be discarded. To prevent zombies, we have to call waitpid
+	// in a loop for all pids
+	while (waitpid(-1, NULL, WNOHANG) > 0);
 }
 
 int main(int argc, const char *argv[])
