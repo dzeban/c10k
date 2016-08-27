@@ -93,24 +93,37 @@ int main(int argc, const char *argv[])
 		debug("Accept from %s, sock %d\n", inet_ntoa(peer_address.sin_addr), sock_client);
 
 		child = fork();
-		if (child == 0) {
-			// Child process
-			debug("Client accept\n");
+		switch (child) {
+			case 0: // Child process
+				if (close(sock_listen)) {
+					perror("close sock_listen");
+				}
 
-			close(sock_listen);
+				ctx = handler_init();
+				http_handler(sock_client, ctx);
+				handler_destroy(ctx);
 
-			ctx = handler_init();
-			http_handler(sock_client, ctx);
-			handler_destroy(ctx);
+				if (close(sock_client)) {
+					perror("close");
+				}
 
-			close(sock_client);
-			exit(EXIT_SUCCESS);
-		} else if (child < 0) {
-			perror("fork");
-			close(sock_client);
-		} else {
-			// Parent process
-			close(sock_client);
+				debug("About to exit from %d\n", getpid());
+				exit(EXIT_SUCCESS);
+				break;
+
+			case -1: // Error
+				perror("fork");
+				if (close(sock_client)) {
+					perror("close sock_client on error");
+				}
+				break;
+
+			default: // Parent
+				// Parent process
+				if (close(sock_client)) {
+					perror("close sock_client in parent");
+				}
+				break;
 		}
     }
 
