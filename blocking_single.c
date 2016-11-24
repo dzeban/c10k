@@ -53,14 +53,11 @@ int main(int argc, const char *argv[])
 
     while (1) {
         int sock_client;
-        struct handler_ctx *ctx;
         sock_client = accept(sock_listen, (struct sockaddr *)&peer_address, &peer_address_len);
 
         debug("Client accept\n");
 
-        ctx = handler_init();
-        http_handler(sock_client, ctx);
-        handler_destroy(ctx);
+        http_handler_loop(sock_client);
 
         close(sock_client);
     }

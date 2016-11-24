@@ -76,7 +76,6 @@ int main(int argc, const char *argv[])
 
     while (1) {
         int sock_client;
-        struct handler_ctx *ctx;
         pid_t child;
 
         sock_client = accept(sock_listen, (struct sockaddr *)&peer_address, &peer_address_len);
@@ -100,9 +99,7 @@ int main(int argc, const char *argv[])
                     perror("close sock_listen");
                 }
 
-                ctx = handler_init();
-                http_handler(sock_client, ctx);
-                handler_destroy(ctx);
+                http_handler_loop(sock_client);
 
                 if (close(sock_client)) {
                     perror("close");

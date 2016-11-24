@@ -13,5 +13,6 @@ struct handler_ctx {
 struct handler_ctx *handler_init();
 void handler_destroy(struct handler_ctx *ctx);
 int http_handler(int sock_client, struct handler_ctx *ctx);
+int http_handler_loop(int sock_client);
 
 #endif

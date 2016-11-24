@@ -1,5 +1,5 @@
 CC := gcc
-CFLAGS := -Wall -Werror
+CFLAGS := -Wall -Werror -DDEBUG
 
 COMMON_CODE := socket_io.c http_handler.c mongoose/mongoose.c
 CLIENT_COMMON_CODE := socket_io.c

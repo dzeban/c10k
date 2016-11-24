@@ -48,7 +48,6 @@ int http_handler(int sock_client, struct handler_ctx *ctx)
     }
     debug("Successfully parsed request\n");
 
-
     if (strncmp(request.method.p, GET, request.method.len) == 0) {
         // Pretend to do some work for 100ms
         usleep(100000);
@@ -58,3 +57,45 @@ int http_handler(int sock_client, struct handler_ctx *ctx)
     }
 }
 
+int http_handler_loop(int sock_client)
+{
+    struct http_message request;
+    struct handler_ctx *ctx;
+    int rc = 0;
+    int nread;
+
+    do {
+        ctx = handler_init();
+
+        nread = socket_read(sock_client, ctx->buf, ctx->bufsize);
+        if (nread < 0) {
+            rc = -1;
+            break;
+        }
+        debug("Read %d\n", nread);
+
+        nread = mg_parse_http(ctx->buf, nread, &request, 1);
+        if (nread <= 0) {
+            rc = -2;
+            break;
+        }
+        debug("Successfully parsed request\n");
+
+        if (strncmp(request.method.p, GET, request.method.len) == 0) {
+            // Pretend to do some work for 100ms
+            usleep(100000);
+            if (socket_write(sock_client, RESPONSE_BODY, strlen(RESPONSE_BODY))) {
+                rc = -3;
+                break;
+            }
+        } else {
+            rc = -4;
+            break;
+        }
+        handler_destroy(ctx);
+
+    } while (nread > 0);
+
+    handler_destroy(ctx);
+    return rc;
+}
