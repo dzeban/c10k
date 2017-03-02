@@ -30,10 +30,9 @@ int main(int argc, const char *argv[])
     socklen_t peer_address_len;
     struct sigaction sa;
 
-
     memset(&address, 0, sizeof(address));
     address.sin_family = AF_INET;
-    address.sin_port = htons(8282);
+    address.sin_port = htons(PORT);
     address.sin_addr.s_addr = htonl(INADDR_ANY);
 
     // Setup signal handler to catch SIGCHLD and avoid zombie children

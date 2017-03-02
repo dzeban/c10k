@@ -1,7 +1,7 @@
 CC := gcc
-CFLAGS := -Wall -Werror -DDEBUG
+CFLAGS := -Wall -Werror # -DDEBUG
 
-COMMON_CODE := socket_io.c http_handler.c mongoose/mongoose.c
+COMMON_CODE := socket_io.c http_handler.c mongoose/mongoose.c picohttpparser/picohttpparser.c
 CLIENT_COMMON_CODE := socket_io.c
 
 all: blocking_single

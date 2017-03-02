@@ -1,6 +1,7 @@
 #include <unistd.h>
 #include <string.h>
 
+#include "picohttpparser/picohttpparser.h"
 #include "mongoose/mongoose.h"
 #include "http_handler.h"
 #include "socket_io.h"
@@ -50,7 +51,7 @@ int http_handler(int sock_client, struct handler_ctx *ctx)
 
     if (strncmp(request.method.p, GET, request.method.len) == 0) {
         // Pretend to do some work for 100ms
-        usleep(100000);
+        // usleep(100000);
         return socket_write(sock_client, RESPONSE_BODY, strlen(RESPONSE_BODY));
     } else {
         return -2;
@@ -74,6 +75,16 @@ int http_handler_loop(int sock_client)
         }
         debug("Read %d\n", nread);
 
+        /*
+        const char *method, *path;
+        int pret, minor_version;
+        struct phr_header headers[100];
+        size_t method_len, path_len, num_headers;
+
+        pret = phr_parse_request(ctx->buf, nread, &method, &method_len, &path, &path_len,
+                         &minor_version, headers, &num_headers, 0);
+        */
+
         nread = mg_parse_http(ctx->buf, nread, &request, 1);
         if (nread <= 0) {
             rc = -2;
@@ -82,8 +93,9 @@ int http_handler_loop(int sock_client)
         debug("Successfully parsed request\n");
 
         if (strncmp(request.method.p, GET, request.method.len) == 0) {
+        //if (strncmp(method, GET, method_len) == 0) {
             // Pretend to do some work for 100ms
-            usleep(100000);
+            // usleep(100000);
             if (socket_write(sock_client, RESPONSE_BODY, strlen(RESPONSE_BODY))) {
                 rc = -3;
                 break;
