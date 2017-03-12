@@ -14,7 +14,6 @@ int socket_read(int sock, char *buf, size_t bufsize)
     nleft = bufsize;
     while (nleft > 0) {
         nread = read(sock, ptr, nleft);
-        debug("nread %d\n", nread);
         if (nread < 0) {
             debug("errno %s\n", strerror(errno));
             if (errno == EINTR) {
@@ -48,7 +47,6 @@ int socket_write(int sock, const char *buf, size_t bufsize)
     nleft = bufsize;
     while (nleft > 0) {
         nwritten = write(sock, ptr, nleft);
-        debug("nwritten %d\n", nwritten);
         if (nwritten < 0) {
             debug("errno %s\n", strerror(errno));
             if (errno == EINTR) {
