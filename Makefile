@@ -19,6 +19,9 @@ dirs:
 server: dirs blocking-single blocking-forking
 client: dirs simple-client libevent2-client
 
+packages: server-packages
+
+server-packages: server-deb server-rpm
 server-deb: server
 	fpm -s dir -t deb -C $(BUILDDIR_SERVER) --prefix /usr/local/bin -f -n $(SERVER_PACKAGE_NAME) -p $(PACKAGEDIR)/c1m-servers_$(SERVER_PACKAGE_VERSION).deb
 
