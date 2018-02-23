@@ -1,0 +1,22 @@
+language: c
+
+compiler:
+- clang
+- gcc
+
+install:
+- sudo apt-get update
+- sudo apt-get install libevent-2.0-5
+
+script:
+- make packages
+
+deploy:
+  provider: releases
+  skip_cleanup: true
+  api_key:
+    secure: noeh4ygQJKUwVlDsh6VsCY9K3+5ZiMDdXWfEJmWWDrvLC0qmocHjsKtuEPa5MKf24EBbL6iTZje99r0tSwqymVDOl6mNobUIlH4nOR5l+cqQQqm45WqUpEwXpMpdGgmNtFpMoAHnxo+cgqnJB4H5nXpetmZUQ11gqHkbhfdPaMs/fcgtWh1c2NP7om/m1Dl9gT1pYNgIQvLhoPQC0eaDdKYasJ/F6hcnkqFzzJEuRwY0AFyJWGeaMYSVHIOiA4oyPdfNTeUPZApPtMt7x3NOSmp7iTc/ZpSQ4MuwnhrdfR72bT6u/A48q5E6t0/ek2bb+Vx5ocrShzANRRe7psYJ7b63hpc9O38LsqN/S2nGidLvyrw7bCr+5U2+AeUaBLY+Nv06czYvalwsUNfcewrSkSJ0FFEIsvWyGXS+HyLHlVM/Jab0c+WGQgtwU0S2JD6f1fyFTXzjpwTjfa513gnvY21yHCCQv+uQrY7uFemtTGmJDXqbpLd2KJd4sfHbDK+8qrV6HXc8kygNJGOoJ+DDaTweCtFYflK7nnTN05rzZisLGX1l31T2XXHSwbA4GhEHmIzI2TzgD+1KTc0P/Q/hkq0/pBgJZPqZ3nXHpfVYOm7clapJcWn37CmQIZUtTAC62YybjqNimzk4z+HJ8lWd66X9JImhFivDbv35gbdut1w=
+  file_glob: true
+  file: package/*
+  on:
+    tags: true
