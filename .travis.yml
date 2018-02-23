@@ -6,6 +6,8 @@ compiler:
 
 install:
 - sudo apt-get update
+- sudo apt-get install ruby ruby-dev rubygems build-essential
+- gem install --no-ri --no-rdoc fpm
 - sudo apt-get install libevent-2.0-5
 
 script:
