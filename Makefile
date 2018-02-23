@@ -1,26 +1,44 @@
 CC := gcc
 CFLAGS := -Wall -Werror # -DDEBUG
 
+BUILDDIR := build
+BUILDDIR_SERVER := $(BUILDDIR)/server
+BUILDDIR_CLIENT := $(BUILDDIR)/client
+
+PACKAGEDIR := package
+SERVER_PACKAGE_NAME := c1m-servers
+SERVER_PACKAGE_VERSION := 1.0
+
 COMMON_CODE := socket_io.c http_handler.c mongoose/mongoose.c picohttpparser/picohttpparser.c
-CLIENT_COMMON_CODE := socket_io.c
 
-all: blocking_single
+all: dirs server client
 
-blocking_single: blocking_single.c $(COMMON_CODE)
-	$(CC) $(CFLAGS) $(EXTRA_CFLAGS) $^ -o $@
+dirs:
+	mkdir -p $(BUILDDIR_SERVER) $(BUILDDIR_CLIENT) $(PACKAGEDIR)
 
-blocking_forking: blocking_forking.c $(COMMON_CODE)
-	$(CC) $(CFLAGS) $(EXTRA_CFLAGS) $^ -o $@
+server: dirs blocking-single blocking-forking
+client: dirs simple-client libevent2-client
 
+server-deb: server
+	fpm -s dir -t deb -C $(BUILDDIR_SERVER) --prefix /usr/local/bin -f -n $(SERVER_PACKAGE_NAME) -p $(PACKAGEDIR)/c1m-servers_$(SERVER_PACKAGE_VERSION).deb
 
-client: client.c $(COMMON_CODE)
-	$(CC) $(CFLAGS) $(EXTRA_CFLAGS) $^ -o $@
+server-rpm: server
+	fpm -s dir -t rpm -C $(BUILDDIR_SERVER) --prefix /usr/local/bin -f -n $(SERVER_PACKAGE_NAME) -p $(PACKAGEDIR)/c1m-servers_$(SERVER_PACKAGE_VERSION).rpm
+
+blocking-single: blocking_single.c $(COMMON_CODE)
+	$(CC) $(CFLAGS) $(EXTRA_CFLAGS) $^ -o $(BUILDDIR_SERVER)/$@
+
+blocking-forking: blocking_forking.c $(COMMON_CODE)
+	$(CC) $(CFLAGS) $(EXTRA_CFLAGS) $^ -o $(BUILDDIR_SERVER)/$@
+
+simple-client: client.c $(COMMON_CODE)
+	$(CC) $(CFLAGS) $(EXTRA_CFLAGS) $^ -o $(BUILDDIR_CLIENT)/$@
 
 libevent2-client: libevent2-client.c
-	$(CC) $(CFLAGS) $(EXTRA_CFLAGS) -levent $^ -o $@
+	$(CC) $(CFLAGS) $(EXTRA_CFLAGS) -levent $^ -o $(BUILDDIR_CLIENT)/$@
 
 clean:
-	rm -f *.o blocking_single blocking_forking client libevent2-client
+	rm -rf *.o $(BUILDDIR) $(PACKAGEDIR)
 
 # Simple test load - 100 concurent clients for 1000 requests
 .PHONY: test
