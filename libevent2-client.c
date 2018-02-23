@@ -27,22 +27,24 @@ void http_request_done(struct evhttp_request *req, void *arg)
 
 int main(int argc, char const *argv[])
 {
-    if (argc != 3) {
-        fprintf(stderr, "Usage: %s <connections> <delay>\n", argv[0]);
+    if (argc != 5) {
+        fprintf(stderr, "Usage: %s <addr> <port> <connections> <delay>\n", argv[0]);
         exit(EXIT_FAILURE);
     }
+    const char *addr = argv[1];
+    int port = strtol(argv[2], NULL, 0);
 
     struct context ctx;
 
-    ctx.nconnections = strtol(argv[1], NULL, 0);
+    ctx.nconnections = strtol(argv[3], NULL, 0);
     ctx.connections = calloc(ctx.nconnections, sizeof(struct evhttp_connection *));
-    ctx.delay = strtol(argv[2], NULL, 0);
+    ctx.delay = strtol(argv[4], NULL, 0);
     ctx.base = event_base_new();
 
     struct evhttp_request *req;
     for (size_t i = 0; i < ctx.nconnections; i++) {
         ctx.connections[i] =
-            evhttp_connection_base_new(ctx.base, NULL, "127.0.0.1", PORT);
+            evhttp_connection_base_new(ctx.base, NULL, addr, port);
 
         req = evhttp_request_new(http_request_done, &ctx);
         evhttp_make_request(ctx.connections[i], req, EVHTTP_REQ_GET, "/");

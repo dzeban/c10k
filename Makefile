@@ -16,8 +16,11 @@ blocking_forking: blocking_forking.c $(COMMON_CODE)
 client: client.c $(COMMON_CODE)
 	$(CC) $(CFLAGS) $(EXTRA_CFLAGS) $^ -o $@
 
+libevent2-client: libevent2-client.c
+	$(CC) $(CFLAGS) $(EXTRA_CFLAGS) -levent $^ -o $@
+
 clean:
-	rm -f *.o blocking_single blocking_forking client
+	rm -f *.o blocking_single blocking_forking client libevent2-client
 
 # Simple test load - 100 concurent clients for 1000 requests
 .PHONY: test
