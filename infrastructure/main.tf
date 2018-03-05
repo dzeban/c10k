@@ -93,4 +93,17 @@ resource "aws_instance" "server" {
   tags {
     Name = "C10K Server"
   }
+
+  provisioner "remote-exec" {
+    inline = ["sudo dnf -y install python"]
+    connection {
+      type = "ssh"
+      user = "fedora"
+      private_key = "${file(var.ssh_key_private)}"
+    }
+  }
+
+  provisioner "local-exec" {
+      command = "ansible-playbook -u fedora -i '${aws_instance.server.public_ip},' --private-key ${var.ssh_key_private} -T 300 provision.yml"
+  }
 }

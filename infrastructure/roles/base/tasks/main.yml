@@ -1,0 +1,6 @@
+---
+
+- name: Ensure test dir
+  file:
+    path: /tmp/test
+    state: directory
