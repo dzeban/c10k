@@ -6,7 +6,7 @@ provider "aws" {
 
 resource "aws_key_pair" "aws_keypair" {
   key_name   = "terraform_test"
-  public_key = "${file(var.ssh_key)}"
+  public_key = "${file(var.ssh_key_public)}"
 }
 
 resource "aws_vpc" "vpc" {
