@@ -1,0 +1,6 @@
+---
+
+- hosts: tag_Name_c10k_server
+  become: yes
+  roles:
+    - c10kserver

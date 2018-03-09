@@ -1,0 +1,36 @@
+---
+
+- name: Make sure we have a 'wheel' group
+  group:
+    name: wheel
+    state: present
+
+- name: Allow 'wheel' group to have passwordless sudo
+  lineinfile:
+    dest: /etc/sudoers
+    state: present
+    regexp: '^%wheel'
+    line: '%wheel ALL=(ALL) NOPASSWD: ALL'
+    validate: 'visudo -cf %s'
+
+- name: Ensure base group
+  group:
+    name: "{{ base_group }}"
+    state: present
+
+- name: Ensure base user
+  user:
+    name: "{{ base_user }}"
+    group: "{{ base_group }}"
+    groups: wheel
+    append: yes
+    state: present
+
+- name: Set authorized key took from file
+  authorized_key:
+    user: "{{ base_user }}"
+    state: present
+    key: "{{ lookup('file', '{{ item }}') }}"
+  with_fileglob:
+    - "files/*.pub"
+
