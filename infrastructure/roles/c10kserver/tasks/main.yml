@@ -1,0 +1,13 @@
+---
+
+- name: Ensure latest version of c10k server
+  dnf:
+    name: "{{ c10kserver_download_url['rpm'] }}"
+    state: latest
+  when: ansible_os_family == 'RedHat'
+
+- name: Ensure latest version of c10k server
+  dnf:
+    name: "{{ c10kserver_download_url['deb'] }}"
+    state: latest
+  when: ansible_os_family == 'Debian'
