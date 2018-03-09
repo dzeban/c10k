@@ -79,22 +79,22 @@ resource "aws_security_group" "server_sg" {
   }
 }
 
-resource "aws_instance" "server" {
+resource "aws_instance" "c10k_server" {
   ami                         = "${var.aws_ami_fedora27[var.aws_region]}"
   instance_type               = "${var.server_instance_type}"
-  count                       = 1
   subnet_id                   = "${aws_subnet.subnet.id}"
   vpc_security_group_ids      = ["${aws_security_group.server_sg.id}"]
   key_name                    = "${aws_key_pair.aws_keypair.key_name}"
   associate_public_ip_address = true
+  count                       = 1
 
   tags {
-    Name = "C10K Server"
+    Name = "c10k_server"
   }
 
   provisioner "remote-exec" {
     # Install Python for Ansible
-    inline = ["sudo dnf -y install python"]
+    inline = ["sudo dnf -y install python libselinux-python"]
 
     connection {
       type        = "ssh"
