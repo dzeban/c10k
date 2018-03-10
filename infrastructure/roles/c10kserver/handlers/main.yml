@@ -1,0 +1,11 @@
+---
+
+- name: systemd reload
+  systemd:
+    daemon-reload: yes
+
+- name: systemd enable
+  systemd:
+    name: "{{ item }}"
+    enabled: yes
+  with_items: "{{ c10kservers }}"

@@ -4,3 +4,7 @@ c10kserver_version: 1.0
 c10kserver_download_url:
   deb: "https://github.com/dzeban/c10k/releases/download/v{{ c10kserver_version }}/c10k-servers_{{c10kserver_version}}.deb"
   rpm: "https://github.com/dzeban/c10k/releases/download/v{{ c10kserver_version }}/c10k-servers_{{c10kserver_version}}.rpm"
+
+c10kservers:
+  - blocking-single
+  - blocking-forking
