@@ -7,7 +7,7 @@ BUILDDIR_CLIENT := $(BUILDDIR)/client
 
 PACKAGEDIR := package
 SERVER_PACKAGE_NAME := c10k-servers
-SERVER_PACKAGE_VERSION := 1.0
+SERVER_PACKAGE_VERSION := 1.1
 
 COMMON_CODE := socket_io.c http_handler.c mongoose/mongoose.c picohttpparser/picohttpparser.c
 
