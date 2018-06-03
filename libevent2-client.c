@@ -6,6 +6,7 @@
 #include <event2/event.h>
 #include <event2/http.h>
 #include <event2/buffer.h>
+#include <event2/dns.h>
 
 #include "config.h"
 
@@ -22,6 +23,7 @@ void http_request_done(struct evhttp_request *req, void *arg)
 
     evbuffer_drain(req->input_buffer, 1024);
     sleep(ctx->delay);
+    fprintf(stderr, "Done req\n");
     event_base_loopexit(ctx->base, NULL);
 }
 
@@ -41,10 +43,16 @@ int main(int argc, char const *argv[])
     ctx.delay = strtol(argv[4], NULL, 0);
     ctx.base = event_base_new();
 
+    struct evdns_base *dns_base = evdns_base_new(ctx.base, 1);
+    if (!dns_base) {
+        fprintf(stderr, "Failed to initialize DNS base\n");
+        goto exit;
+    }
+
     struct evhttp_request *req;
     for (size_t i = 0; i < ctx.nconnections; i++) {
         ctx.connections[i] =
-            evhttp_connection_base_new(ctx.base, NULL, addr, port);
+            evhttp_connection_base_new(ctx.base, dns_base, addr, port);
 
         req = evhttp_request_new(http_request_done, &ctx);
         evhttp_make_request(ctx.connections[i], req, EVHTTP_REQ_GET, "/");
@@ -52,11 +60,16 @@ int main(int argc, char const *argv[])
     }
 
     event_base_dispatch(ctx.base);
+
+exit:
     for (size_t i = 0; i < ctx.nconnections; i++) {
         evhttp_connection_free(ctx.connections[i]);
     }
+
+    evdns_base_free(dns_base, 0);
     event_base_free(ctx.base);
 
     free(ctx.connections);
     return 0;
+
 }
