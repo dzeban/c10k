@@ -11,3 +11,18 @@
     name: "{{ c10kserver_download_url['deb'] }}"
     state: latest
   when: ansible_os_family == 'Debian'
+
+- name: Render service template
+  template:
+    src: systemd.j2
+    dest: "/etc/systemd/system/{{ item }}.service"
+    owner: root
+    group: root
+    mode: 0644
+  vars:
+    program: "{{ item }}"
+  with_items: "{{ c10kservers }}"
+  changed_when: True
+  notify:
+    - systemd reload
+    - systemd enable

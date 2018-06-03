@@ -6,8 +6,8 @@ BUILDDIR_SERVER := $(BUILDDIR)/server
 BUILDDIR_CLIENT := $(BUILDDIR)/client
 
 PACKAGEDIR := package
-SERVER_PACKAGE_NAME := c1m-servers
-SERVER_PACKAGE_VERSION := 1.0
+SERVER_PACKAGE_NAME := c10k-servers
+SERVER_PACKAGE_VERSION := 1.1
 
 COMMON_CODE := socket_io.c http_handler.c mongoose/mongoose.c picohttpparser/picohttpparser.c
 
@@ -23,10 +23,10 @@ packages: server-packages
 
 server-packages: server-deb server-rpm
 server-deb: server
-	fpm -s dir -t deb -C $(BUILDDIR_SERVER) --prefix /usr/local/bin -f -n $(SERVER_PACKAGE_NAME) -p $(PACKAGEDIR)/c1m-servers_$(SERVER_PACKAGE_VERSION).deb
+	fpm -s dir -t deb -C $(BUILDDIR_SERVER) --prefix /usr/local/bin -f -n $(SERVER_PACKAGE_NAME) -p $(PACKAGEDIR)/c10k-servers_$(SERVER_PACKAGE_VERSION).deb
 
 server-rpm: server
-	fpm -s dir -t rpm -C $(BUILDDIR_SERVER) --prefix /usr/local/bin -f -n $(SERVER_PACKAGE_NAME) -p $(PACKAGEDIR)/c1m-servers_$(SERVER_PACKAGE_VERSION).rpm
+	fpm -s dir -t rpm -C $(BUILDDIR_SERVER) --prefix /usr/local/bin -f -n $(SERVER_PACKAGE_NAME) -p $(PACKAGEDIR)/c10k-servers_$(SERVER_PACKAGE_VERSION).rpm
 
 blocking-single: blocking_single.c $(COMMON_CODE)
 	$(CC) $(CFLAGS) $(EXTRA_CFLAGS) $^ -o $(BUILDDIR_SERVER)/$@

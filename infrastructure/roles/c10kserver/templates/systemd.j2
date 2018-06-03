@@ -1,0 +1,8 @@
+[Unit]
+Description=c10k server {{ program }}
+
+[Service]
+ExecStart=/usr/local/bin/{{ program }}
+
+[Install]
+WantedBy=multi-user.target
