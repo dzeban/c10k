@@ -21,9 +21,8 @@ void http_request_done(struct evhttp_request *req, void *arg)
 {
     struct context *ctx = (struct context *)arg;
 
-    evbuffer_drain(req->input_buffer, 1024);
     sleep(ctx->delay);
-    fprintf(stderr, "Done req\n");
+    evbuffer_drain(req->input_buffer, 1024);
     event_base_loopexit(ctx->base, NULL);
 }
 
@@ -55,8 +54,9 @@ int main(int argc, char const *argv[])
             evhttp_connection_base_new(ctx.base, dns_base, addr, port);
 
         req = evhttp_request_new(http_request_done, &ctx);
-        evhttp_make_request(ctx.connections[i], req, EVHTTP_REQ_GET, "/");
-        evhttp_connection_set_timeout(req->evcon, 600);
+        evhttp_add_header(req->output_headers, "Host", addr);
+
+        evhttp_make_request(ctx.connections[i], req, EVHTTP_REQ_GET, "/index.html");
     }
 
     event_base_dispatch(ctx.base);
