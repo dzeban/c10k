@@ -17,12 +17,24 @@ struct context {
     long delay;
 };
 
+void delay_done(evutil_socket_t fd, short events, void *arg)
+{
+    fprintf(stderr, "delay done\n");
+}
+
 void http_request_done(struct evhttp_request *req, void *arg)
 {
     struct context *ctx = (struct context *)arg;
 
-    sleep(ctx->delay);
+    struct timeval tv;
+    tv.tv_sec = 1;
+
+    struct event *ev = evtimer_new(ctx->base, delay_done, NULL);
+    evtimer_add(ev, &tv);
+
     evbuffer_drain(req->input_buffer, 1024);
+    event_free(ev);
+
     event_base_loopexit(ctx->base, NULL);
 }
 
