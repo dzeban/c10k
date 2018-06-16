@@ -50,12 +50,12 @@ static void alloc_cb(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf)
 
 static void on_read(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf)
 {
-    fprintf(stderr, "on_read\n");
+    fprintf(stderr, "on_read: nread %zd\n", nread);
 
+    // EOF is not met until keepalive timeout set on nginx
     if (nread == UV_EOF) {
-        if (!uv_is_closing((uv_handle_t *)stream)) {
-            uv_close((uv_handle_t *)stream, empty_close_cb);
-        }
+        fprintf(stderr, "nread == EOF\n");
+        uv_read_stop(stream);
         fprintf(stderr, "closed stream\n");
         printf("\n");
     }
@@ -64,6 +64,8 @@ static void on_read(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf)
 
     printf("%s", buf->base);
     free(buf->base);
+
+    // uv_close((uv_handle_t *)stream, empty_close_cb);
 }
 
 static void on_write(uv_write_t *req, int status)
@@ -87,11 +89,29 @@ static void on_connect(uv_connect_t *connection, int status)
     uv_write(&write_req, connection->handle, bufs, 1, on_write);
 }
 
+static void walk_cb(uv_handle_t *handle, void *arg)
+{
+    fprintf(stderr, "%d: active %d, closing %d, ref %d\n",
+        uv_handle_get_type(handle),
+        uv_is_active(handle),
+        uv_is_closing(handle),
+        uv_has_ref(handle));
+}
+
+static void idle_handler(uv_idle_t* handle)
+{
+    uv_walk(handle->loop, walk_cb, NULL);
+}
+
 int main(int argc, const char *argv[])
 {
     int rc = -1;
 
     uv_loop_t *loop = uv_default_loop();
+
+    // uv_idle_t idler;
+    // uv_idle_init(loop, &idler);
+    // uv_idle_start(&idler, idle_handler);
 
     uv_tcp_t *socket = malloc(sizeof(*socket));
     if (!socket) {
@@ -100,6 +120,10 @@ int main(int argc, const char *argv[])
     }
 
     rc = uv_tcp_init(loop, socket);
+    goto_uv_err(rc, exit);
+
+    // This doesn't disable keepalive actually
+    rc = uv_tcp_keepalive(socket, 0, 0);
     goto_uv_err(rc, exit);
 
     uv_connect_t *connect = malloc(sizeof(*connect));
