@@ -1,9 +1,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <netinet/in.h>
 
 #include <uv.h>
+
+#define log(fmt, ...) do { \
+    fprintf(stderr, "location=\"%s:%d:%s\" level=INFO msg=\"" fmt "\"\n", __FILE__, __LINE__,  __FUNCTION__, ##__VA_ARGS__); \
+} while(0)
+
+#define err(fmt, ...) do { \
+    fprintf(stderr, "location=%s:%d:%s level=ERROR msg=\"" fmt "\"\n", __FILE__,  __LINE__, __FUNCTION__, ##__VA_ARGS__); \
+} while(0)
 
 #define goto_uv_err(status, label) do { \
     if (status < 0) { \
@@ -26,18 +35,19 @@
     } \
 } while(0)
 
-char *GET_REQUEST = "GET /index.html HTTP/1.1\r\nHost: localhost\r\n\r\n";
+// Set "Connection: close" header to avoid HTTP keep-alive and hint the server
+// to close connection. Without it we'll wait for EOF until keepalive timeout.
+// The other option here is to use HTTP/1.0
+char *GET_REQUEST = "GET /index.html HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
 
-static void empty_close_cb(uv_handle_t *handle)
+static void empty_close_cb(uv_handle_t *handle __attribute__((unused)))
 {
-    fprintf(stderr, "Invoked close_cb\n");
+    log("invoked close_cb");
 }
 
-static void alloc_cb(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf)
+static void alloc_cb(uv_handle_t *handle __attribute__((unused)), size_t suggested_size, uv_buf_t *buf)
 {
-    // uv_buf_init?
-
-    char *b = malloc(suggested_size);
+    char *b = calloc(1, suggested_size);
     if (!b) {
         // Trigger UV_ENOBUFS error in read cb
         buf->base = NULL;
@@ -50,57 +60,71 @@ static void alloc_cb(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf)
 
 static void on_read(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf)
 {
-    fprintf(stderr, "on_read: nread %zd\n", nread);
-
-    // EOF is not met until keepalive timeout set on nginx
-    if (nread == UV_EOF) {
-        fprintf(stderr, "nread == EOF\n");
+    if (nread > 0) {
+        printf("%s", buf->base);
+    } else if (nread == UV_EOF) {
         uv_read_stop(stream);
-        fprintf(stderr, "closed stream\n");
-        printf("\n");
+    } else {
+        return_uv_err(nread);
     }
 
-    return_uv_err(nread);
-
-    printf("%s", buf->base);
     free(buf->base);
-
-    // uv_close((uv_handle_t *)stream, empty_close_cb);
 }
 
 static void on_write(uv_write_t *req, int status)
 {
     return_uv_err(status);
-    fprintf(stderr, "written\n");
 
     uv_read_start(req->handle, alloc_cb, on_read);
 }
 
-static void on_connect(uv_connect_t *connection, int status)
+static void timer_cb(uv_timer_t *timer)
 {
-    return_uv_err(status);
-    fprintf(stderr, "connected\n");
+    uv_connect_t *connection = uv_handle_get_data((uv_handle_t *)timer);
+    if (!connection) {
+        err("invalid timer data: no connection handle");
+        return;
+    }
+
+    free(timer);
 
     uv_buf_t bufs[] = {
         { .base = GET_REQUEST, .len = strlen(GET_REQUEST) },
     };
 
+    log("sending http request");
     uv_write_t write_req;
     uv_write(&write_req, connection->handle, bufs, 1, on_write);
 }
 
-static void walk_cb(uv_handle_t *handle, void *arg)
+static void on_connect(uv_connect_t *connection, int status)
 {
-    fprintf(stderr, "%d: active %d, closing %d, ref %d\n",
-        uv_handle_get_type(handle),
-        uv_is_active(handle),
-        uv_is_closing(handle),
-        uv_has_ref(handle));
-}
+    int rc = 0;
 
-static void idle_handler(uv_idle_t* handle)
-{
-    uv_walk(handle->loop, walk_cb, NULL);
+    return_uv_err(status);
+    log("connected");
+
+    uv_loop_t *loop = uv_default_loop();
+    if (!loop) {
+        err("no loop in connection handle");
+        return;
+    }
+
+    // Setup timer to for sleep
+    uv_timer_t *sleep_timer = malloc(sizeof(*sleep_timer));
+    if (!sleep_timer) {
+        perror("malloc");
+        return;
+    }
+
+    rc = uv_timer_init(loop, sleep_timer);
+    return_uv_err(rc);
+
+    uv_handle_set_data((uv_handle_t *)sleep_timer, connection);
+
+    log("starting timer");
+    rc = uv_timer_start(sleep_timer, timer_cb, 1 * 1000, 0);
+    return_uv_err(rc);
 }
 
 int main(int argc, const char *argv[])
@@ -109,10 +133,6 @@ int main(int argc, const char *argv[])
 
     uv_loop_t *loop = uv_default_loop();
 
-    // uv_idle_t idler;
-    // uv_idle_init(loop, &idler);
-    // uv_idle_start(&idler, idle_handler);
-
     uv_tcp_t *socket = malloc(sizeof(*socket));
     if (!socket) {
         perror("malloc");
@@ -120,10 +140,6 @@ int main(int argc, const char *argv[])
     }
 
     rc = uv_tcp_init(loop, socket);
-    goto_uv_err(rc, exit);
-
-    // This doesn't disable keepalive actually
-    rc = uv_tcp_keepalive(socket, 0, 0);
     goto_uv_err(rc, exit);
 
     uv_connect_t *connect = malloc(sizeof(*connect));
@@ -142,20 +158,7 @@ int main(int argc, const char *argv[])
     rc = uv_run(loop, UV_RUN_DEFAULT);
 
 exit:
-    if (!uv_is_closing((uv_handle_t *)connect)) {
-        // This uv_close call violates assertion in libuv
-        // $ ./libuv-client > /dev/null
-        // connected
-        // written
-        // on_read
-        // on_read
-        // closed stream
-        // libuv-client.c:63: EOF : end of file
-        // Invoked close_cb
-        // libuv-client: src/unix/core.c:182: uv_close : Assertion `0' failed. Aborted(core dumped)
-        //
-        // uv_close((uv_handle_t *)connect, empty_close_cb);
-    }
+    uv_loop_close(loop);
 
     if (connect) {
         free(connect);
@@ -168,8 +171,6 @@ exit:
     if (socket) {
         free(socket);
     }
-
-    uv_loop_close(loop);
 
     return rc;
 }
