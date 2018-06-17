@@ -123,12 +123,30 @@ static void on_connect(uv_connect_t *connection, int status)
     uv_handle_set_data((uv_handle_t *)sleep_timer, connection);
 
     log("starting timer");
-    rc = uv_timer_start(sleep_timer, timer_cb, 1 * 1000, 0);
+    int *delay = uv_handle_get_data((uv_handle_t *)connection);
+    if (!delay) {
+        err("invalid connection data: no delay");
+        return;
+    }
+    rc = uv_timer_start(sleep_timer, timer_cb, *delay * 1000, 0);
     return_uv_err(rc);
 }
 
 int main(int argc, const char *argv[])
 {
+    if (argc != 2 && argc != 3) {
+        fprintf(stderr, "Usage: %s <addr> [delay]\n", argv[0]);
+        fprintf(stderr, "\n");
+        fprintf(stderr, "   addr  - where to connect like 127.0.0.1\n");
+        fprintf(stderr, "   delay - delay between connection and request in seconds (default is 5)\n");
+        return -1;
+    }
+
+    int delay = 5;
+    if (argc == 3) {
+        delay = strtol(argv[2], NULL, 0);
+    }
+
     int rc = -1;
 
     uv_loop_t *loop = uv_default_loop();
@@ -142,17 +160,19 @@ int main(int argc, const char *argv[])
     rc = uv_tcp_init(loop, socket);
     goto_uv_err(rc, exit);
 
-    uv_connect_t *connect = malloc(sizeof(*connect));
-    if (!connect) {
+    uv_connect_t *connection = malloc(sizeof(*connection));
+    if (!connection) {
         perror("malloc");
         goto exit;
     }
 
+    uv_handle_set_data((uv_handle_t *)connection, &delay);
+
     struct sockaddr_in dest;
-    rc = uv_ip4_addr("127.0.0.1", 80, &dest);
+    rc = uv_ip4_addr(argv[1], 80, &dest);
     goto_uv_err(rc, exit);
 
-    rc = uv_tcp_connect(connect, socket, (const struct sockaddr *)&dest, on_connect);
+    rc = uv_tcp_connect(connection, socket, (const struct sockaddr *)&dest, on_connect);
     goto_uv_err(rc, exit);
 
     rc = uv_run(loop, UV_RUN_DEFAULT);
@@ -160,8 +180,8 @@ int main(int argc, const char *argv[])
 exit:
     uv_loop_close(loop);
 
-    if (connect) {
-        free(connect);
+    if (connection) {
+        free(connection);
     }
 
     if (!uv_is_closing((uv_handle_t *)socket)) {
