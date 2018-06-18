@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 #include <time.h>
 #include <netinet/in.h>
@@ -41,9 +42,9 @@
 char *GET_REQUEST = "GET /index.html HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n";
 int DELAY = 5;
 
-static void empty_close_cb(uv_handle_t *handle __attribute__((unused)))
+static void free_close_cb(uv_handle_t *handle)
 {
-    log("invoked close_cb");
+    free(handle);
 }
 
 static void alloc_cb(uv_handle_t *handle __attribute__((unused)), size_t suggested_size, uv_buf_t *buf)
@@ -64,7 +65,10 @@ static void on_read(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf)
     if (nread > 0) {
         printf("%s", buf->base);
     } else if (nread == UV_EOF) {
-        uv_read_stop(stream);
+        log("close stream");
+        uv_connect_t *conn = uv_handle_get_data((uv_handle_t *)stream);
+        uv_close((uv_handle_t *)stream, free_close_cb);
+        free(conn);
     } else {
         return_uv_err(nread);
     }
@@ -76,7 +80,9 @@ static void on_write(uv_write_t *req, int status)
 {
     return_uv_err(status);
 
+    log("start reading");
     uv_read_start(req->handle, alloc_cb, on_read);
+    free(req);
 }
 
 static void timer_cb(uv_timer_t *timer)
@@ -87,15 +93,24 @@ static void timer_cb(uv_timer_t *timer)
         return;
     }
 
-    free(timer);
+    uv_stream_t *stream = connection->handle;
 
     uv_buf_t bufs[] = {
         { .base = GET_REQUEST, .len = strlen(GET_REQUEST) },
     };
 
-    log("sending http request");
-    uv_write_t write_req;
-    uv_write(&write_req, connection->handle, bufs, 1, on_write);
+    log("send http request");
+    uv_write_t *write_req = calloc(1, sizeof(uv_write_t));
+    if (!write_req) {
+        err("malloc write request failed: %s", strerror(errno));
+        return;
+    }
+    // Store connection handle in stream to free memory on EOF
+    uv_handle_set_data((uv_handle_t *)stream, connection);
+
+    uv_write(write_req, stream, bufs, 1, on_write);
+
+    uv_close((uv_handle_t *)timer, free_close_cb);
 }
 
 static void on_connect(uv_connect_t *connection, int status)
@@ -111,7 +126,7 @@ static void on_connect(uv_connect_t *connection, int status)
         return;
     }
 
-    // Setup timer to for sleep
+    // Setup timer for sleep
     uv_timer_t *sleep_timer = malloc(sizeof(*sleep_timer));
     if (!sleep_timer) {
         perror("malloc");
@@ -144,7 +159,7 @@ void connections_destroy(struct connection *conns, int n)
 
         if (c.socket) {
             if (!uv_is_closing((uv_handle_t*)c.socket)) {
-                uv_close((uv_handle_t*)c.socket, empty_close_cb);
+                uv_close((uv_handle_t*)c.socket, free_close_cb);
             }
             free(c.socket);
         }
@@ -218,7 +233,10 @@ int main(int argc, const char *argv[])
     rc = uv_run(loop, UV_RUN_DEFAULT);
 
 exit:
-    uv_loop_close(loop);
+    rc = uv_loop_close(loop);
+    return_rc_uv_err(rc, 1);
+
     connections_destroy(conns, n);
+
     return rc;
 }
