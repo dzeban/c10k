@@ -1,5 +1,5 @@
 CC := gcc
-CFLAGS := -Wall -Werror # -DDEBUG
+CFLAGS := -Wall -Werror -Wextra # -DDEBUG
 
 BUILDDIR := build
 BUILDDIR_SERVER := $(BUILDDIR)/server
@@ -17,7 +17,7 @@ dirs:
 	mkdir -p $(BUILDDIR_SERVER) $(BUILDDIR_CLIENT) $(PACKAGEDIR)
 
 server: dirs blocking-single blocking-forking
-client: dirs simple-client libevent2-client
+client: dirs simple-client libuv-client
 
 packages: server-packages
 
@@ -37,8 +37,8 @@ blocking-forking: blocking_forking.c $(COMMON_CODE)
 simple-client: client.c $(COMMON_CODE)
 	$(CC) $(CFLAGS) $(EXTRA_CFLAGS) $^ -o $(BUILDDIR_CLIENT)/$@
 
-libevent2-client: libevent2-client.c
-	$(CC) $(CFLAGS) $(EXTRA_CFLAGS) -levent $^ -o $(BUILDDIR_CLIENT)/$@
+libuv-client: libuv-client.c
+	$(CC) $(CFLAGS) $(EXTRA_CFLAGS) -luv $^ -o $(BUILDDIR_CLIENT)/$@
 
 clean:
 	rm -rf *.o $(BUILDDIR) $(PACKAGEDIR)
