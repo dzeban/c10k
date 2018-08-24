@@ -10,6 +10,8 @@ int socket_read(int sock, char *buf, size_t bufsize)
     int nleft, nread;
     char *ptr;
 
+    debug("Reading from socket\n");
+
     ptr = buf;
     nleft = bufsize;
     while (nleft > 0) {
@@ -19,15 +21,19 @@ int socket_read(int sock, char *buf, size_t bufsize)
             if (errno == EINTR) {
                 nread = 0; // call read again
             } else {
+                perror("read");
                 return -1;
             }
         } else if (nread == 0) {
             // EOF
+            debug("EOF\n");
             break;
         } else {
             // Detect end of request
-            if (strstr(ptr, "\r\n\r\n") != NULL)
+            if (strstr(ptr, "\r\n\r\n") != NULL) {
+                debug("Request end\n");
                 break;
+            }
         }
 
         nleft -= nread;
@@ -43,6 +49,8 @@ int socket_write(int sock, const char *buf, size_t bufsize)
     int nleft, nwritten;
     const char *ptr;
 
+    debug("Writing to socket\n");
+
     ptr = buf;
     nleft = bufsize;
     while (nleft > 0) {
@@ -52,6 +60,7 @@ int socket_write(int sock, const char *buf, size_t bufsize)
             if (errno == EINTR) {
                 nwritten = 0; // call write again
             } else {
+                perror("write");
                 return -1;
             }
         } else if (nwritten == 0) {
@@ -60,6 +69,7 @@ int socket_write(int sock, const char *buf, size_t bufsize)
             // > file, the results are not specified.
             // We're writing to socket, so we can't say for sure what's wrong,
             // therefore we'll fail.
+            fprintf(stderr, "nwritten == 0\n");
             return -1;
         }
 

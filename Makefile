@@ -1,5 +1,5 @@
 CC := gcc
-CFLAGS := -Wall -Werror # -DDEBUG
+CFLAGS := -Wall -Werror -DDEBUG
 
 BUILDDIR := build
 BUILDDIR_SERVER := $(BUILDDIR)/server

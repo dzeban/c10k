@@ -45,15 +45,15 @@ int http_handler(int sock_client, struct handler_ctx *ctx)
 
     nread = mg_parse_http(ctx->buf, nread, &request, 1);
     if (nread <= 0) {
+        fprintf(stderr, "Invalid HTTP request: nread %d, buf: %s\n", nread, ctx->buf);
         return -1;
     }
     debug("Successfully parsed request\n");
 
     if (strncmp(request.method.p, GET, request.method.len) == 0) {
-        // Pretend to do some work for 100ms
-        // usleep(100000);
         return socket_write(sock_client, RESPONSE_BODY, strlen(RESPONSE_BODY));
     } else {
+        fprintf(stderr, "Invalid method: %s\n", request.method.p);
         return -2;
     }
 }
@@ -73,7 +73,6 @@ int http_handler_loop(int sock_client)
             rc = -1;
             break;
         }
-        debug("Read %d\n", nread);
 
         if (nread == 0) {
             debug("EOF\n");
@@ -81,9 +80,7 @@ int http_handler_loop(int sock_client)
             break;
         }
 
-        pret = phr_parse_request(ctx->buf, nread, &method, &method_len, &path, &path_len,
-                         &minor_version, headers, &num_headers, 0);
-        */
+        debug("Read %d\n", nread);
 
         nread = mg_parse_http(ctx->buf, nread, &request, 1);
         if (nread <= 0) {
@@ -93,9 +90,6 @@ int http_handler_loop(int sock_client)
         debug("Successfully parsed request\n");
 
         if (strncmp(request.method.p, GET, request.method.len) == 0) {
-        //if (strncmp(method, GET, method_len) == 0) {
-            // Pretend to do some work for 100ms
-            // usleep(100000);
             if (socket_write(sock_client, RESPONSE_BODY, strlen(RESPONSE_BODY))) {
                 rc = -3;
                 break;
