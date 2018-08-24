@@ -75,11 +75,11 @@ int http_handler_loop(int sock_client)
         }
         debug("Read %d\n", nread);
 
-        /*
-        const char *method, *path;
-        int pret, minor_version;
-        struct phr_header headers[100];
-        size_t method_len, path_len, num_headers;
+        if (nread == 0) {
+            debug("EOF\n");
+            rc = 0;
+            break;
+        }
 
         pret = phr_parse_request(ctx->buf, nread, &method, &method_len, &path, &path_len,
                          &minor_version, headers, &num_headers, 0);
